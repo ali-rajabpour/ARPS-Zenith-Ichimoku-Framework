@@ -1,0 +1,195 @@
+//By:Ali Rajabpour-Sanati | ali.poursanati@gmail.com
+//@version=4
+study(title="💲ARPS Zenith Ichimoku Framework💲", shorttitle="💲ARPS Zenith Ichimoku Framework💲", overlay=true, format=format.price, precision=2)
+
+// ***********************************************************************************
+//------------------------------------ Ichimoku ------------------------------------//
+
+TenkansenPeriods = 20		//defval=9, minval=1, title="Tenkan-Sen"
+KijunsenPeriods = 60		//defval=26, minval=1, title="Kijun-Sen"
+HighLinePeriods = 239		//defval=103, minval=1, title="103 Periods Line"
+leadingSpan2Periods = 120		//defval=52, minval=1, title="Senkou Span B"
+
+displacement = 30		//defval=26, minval=1, title="-ChikouSpan/+SenkouSpan A"
+displacementTenkanShift = -40		//defval=-17, minval=-52, title="-TenkanShift"
+displacementQualityLine = 30		//defval=26, minval=1, title="+QualityLine"
+displacementDirectionLine = -6		//defval=-26, minval=-52, title="-DirectionLine"
+
+showTenkan = input(true, title="Show Tenkan-Sen")
+showKijun = input(true, title="Show Kijun-Sen")
+showChikouSpan = input(true, title="Show Chikou Span (lagging span)?")
+showCloud = input(true, title="Show cloud")
+cross1 = input(true, title="Show crossings Tenkan/Kijun")
+showQL = input(true, title="Show Quality Line")
+showDL = input(true, title="Show Direction Line")
+showTenkanShift = input(true, title="Show TenkanSen Shift")
+showHighLine = input(true, title="Show 103 Periods Line")
+
+//Definitions for Tenkan-Sen (9 Period), Kijun-Sen (26 Period), Chikou Span (Lagging Line)
+donchian(len) => avg(lowest(len), highest(len))
+turning = donchian(TenkansenPeriods)
+standard = donchian(KijunsenPeriods)
+highline = donchian(HighLinePeriods)
+leadingSpan1 = avg(turning, standard)
+leadingSpan2 = donchian(leadingSpan2Periods)
+
+//Crosses up/down Tenkan-Sen (9 Period) and Kijun-Sen (26 Period)
+crossUpTenkanKinjun = turning[1] < standard[1] and turning >= standard ? 1 : 0
+crossDnTenkanKinjun = turning[1] > standard[1] and turning <= standard ? 1 : 0
+
+//First Definition for Ability to Color Cloud based on Trend.
+leadingSpan1Above = leadingSpan1 >= leadingSpan2 ? 1 : na
+leadingSpan2Below = leadingSpan1 <= leadingSpan2 ? 1 : na
+
+//Next 4 lines are code used as plots in order to Color Cloud based on Trend
+span1plotU = leadingSpan1Above ? leadingSpan1 : na
+span2plotU = leadingSpan1Above ? leadingSpan2 : na
+
+span1plotD = leadingSpan2Below ? leadingSpan1 : na
+span2plotD = leadingSpan2Below ? leadingSpan2 : na
+
+col = leadingSpan1 >= leadingSpan2 ? #45E305 : color.red // bullish, bearish
+
+//Cloud Lines Plot Statements - ***Regular Lines to Fill in Break in Gap
+plot(showCloud and leadingSpan1 ? leadingSpan1 : na, title = 'Senkou Span A cloud', linewidth=1, offset = displacement, color=col, transp=90)
+plot(showCloud and leadingSpan2 ? leadingSpan2 : na, title = 'Senkou Span B cloud', linewidth=3, offset = displacement, color=col, transp=90)
+
+//Cloud Lines Plot Statements - ***linebr to create rules for change in Shading
+p1 = plot(showCloud and span1plotU ? span1plotU  : na, title = 'Senkou Span A above Span B Cloud', style=plot.style_linebr, linewidth=1, offset = displacement, color=col, transp=90)
+p2 = plot(showCloud and span2plotU ? span2plotU  : na, title = 'Senkou Span B below Span A Cloud', style=plot.style_linebr, linewidth=1, offset = displacement, color=col, transp=90)
+p3 = plot(showCloud and span1plotD ? span1plotD  : na, title = 'Senkou Span A below Span B Cloud', style=plot.style_linebr, linewidth=1, offset = displacement, color=col, transp=90)
+p4 = plot(showCloud and span2plotD ? span2plotD  : na, title = 'Senkou Span B above Span A Cloud', style=plot.style_linebr, linewidth=1, offset = displacement, color=col, transp=90)
+
+//Fills that color cloud based on Trend.
+fill(p1, p2, color=#6EFF33  ,title='Kumo (Cloud)', transp=90)    // bullish cloud
+fill(p3, p4, color=color.red, title='Kumo (Cloud)', transp=90)    // bearish cloud
+
+//plots for 3 lines other than cloud.
+
+plot(showKijun and standard ? standard : na, title = 'Kijun-Sen', linewidth=3, color=color.red, transp=0)
+plot(showTenkan and turning ? turning : na, title = 'Tenkan-Sen', linewidth=2, color=color.green, transp=0)
+plot(showChikouSpan and close ? close : na, title='Chikou Span (Lagging Span)', linewidth=2, offset = -displacement, color=#A900FF)
+
+
+//////////////////////////////////////////////
+plot(showHighLine and highline ? highline : na, title = '103 Periods Line', linewidth=2, color=#32DCF3, transp=0)
+plot(showTenkanShift and turning ? turning : na, title = 'Tenkan-Sen Shift', linewidth=1,offset = displacementTenkanShift , color=#F33315, transp=0)
+plot(showQL and standard ? standard : na, title = 'Quality Line', linewidth=1, offset = displacementQualityLine , color=color.black, transp=0)
+plot(showDL and standard ? standard : na, title = 'Direction Line', linewidth=1, style=plot.style_linebr, offset = displacementDirectionLine , color=#7D8381 , transp=0)
+
+//////////////////////////////////////////////
+
+//Arrow Plots At Tenkan-Sen (9 Period) and Kinjun-Sen (26 Period)
+plotchar(cross1 and crossUpTenkanKinjun ? leadingSpan1 : na, title="CrossUp Tenkan Kijun Entry Arrow",char='▲', color=color.green, transp=0, location=location.bottom, size=size.small)
+plotchar(cross1 and crossDnTenkanKinjun ? leadingSpan1 : na, title="CrossDn Tenkan Kijun Entry Arrow",char='▼', color=color.red, transp=0, location=location.top, size=size.small)
+
+// ***********************************************************************************
+//------------------------------------ ZEMA Line -----------------------------------//
+
+ShowZEMA = input(false, title="Show ZEMA")
+zema_tf = input("60", title = "ZEMA Timeframe", type = input.resolution, options = ["30", "60","120", "240","360","720", "D", "W"])
+zema_length = input(42, title = "ZEMA Period", type = input.integer)
+
+//ZEMA-1
+temp_EMA_1 = security(syminfo.tickerid, zema_tf,ema(close, zema_length))
+temp_EMA_2 = security(syminfo.tickerid, zema_tf,ema(temp_EMA_1, zema_length))
+Difference_50_30 = temp_EMA_1 - temp_EMA_2
+ZEMA_line = temp_EMA_1 + Difference_50_30
+
+plot(ShowZEMA ? ZEMA_line : na, color=color.yellow, linewidth=2, title="ZEMA Line", editable=false)
+
+// ***********************************************************************************
+//---------------------------- Moving Averages System ------------------------------//
+
+ShowMA_System = input(true, title="Show MAs System")
+
+color_green = #8bf8c0
+color_red = #feaebc
+
+trend_drirection_up = open > ZEMA_line and close > ZEMA_line and low > ZEMA_line and high > ZEMA_line
+trend_direction_down = open < ZEMA_line and close < ZEMA_line and low < ZEMA_line and high < ZEMA_line
+Direction_Color = trend_drirection_up ? color_green : trend_direction_down ? color_red : color.yellow
+
+sl_atr = atr(9)
+stoploss_price_long = low - sl_atr
+stoploss_price_short = high + sl_atr
+
+sl_line = plot(trend_drirection_up and ShowMA_System ? stoploss_price_long : trend_direction_down and ShowMA_System ? stoploss_price_short : na, color=Direction_Color, title="Stoploss Line", linewidth=2)
+
+//T3 Line
+
+length1 = input(21, "T3 Length")
+a1 = input(0.98, "Volume Factor")
+
+e1 = ema((high + low + 2 * close) / 4, length1)
+e2 = ema(e1, length1)
+e3 = ema(e2, length1)
+e4 = ema(e3, length1)
+e5 = ema(e4, length1)
+e6 = ema(e5, length1)
+c1 = -a1 * a1 * a1
+c2 = 3 * a1 * a1 + 3 * a1 * a1 * a1
+c3 = -6 * a1 * a1 - 3 * a1 - 3 * a1 * a1 * a1
+c4 = 1 + 3 * a1 + a1 * a1 * a1 + 3 * a1 * a1
+T3 = c1 * e6 + c2 * e5 + c3 * e4 + c4 * e3
+
+col1 = T3 > T3[1]
+col3 = T3 < T3[1]
+color_1 = col1 ? color.green : col3 ? color.red : color.yellow
+plot(ShowMA_System ? T3 : na, color=color_1, linewidth=3, title="T3")
+
+
+// ***********************************************************************************
+//----------------------------------- VWAP Angle -----------------------------------//
+//rad2degree=180/3.14159265359  //pi
+//iBarsBack=1
+//indicator=vwap(hlc3)
+//slopeD=rad2degree*atan((indicator[0]-nz(indicator[iBarsBack]))/iBarsBack)
+//label.new(bar_index, high, tostring(slopeD))
+
+// ***********************************************************************************
+//------------------------------- Williams Fractals --------------------------------//
+Show_Upward_Fractals = input(false, title="Show Upward William's Fractals")
+Show_Downward_Fractals = input(false, title="Show Downward William's Fractals")
+
+// Define "n" as the number of periods and keep a minimum value of 2 for error handling.
+n = input(title="Periods", defval=2, minval=2, type=input.integer)
+upFractal = ((high[n+2]  < high[n]) and (high[n+1]  < high[n]) and (high[n-1] < high[n]) and (high[n-2] < high[n]))
+     or ((high[n+3]  < high[n]) and (high[n+2]  < high[n]) and (high[n+1] == high[n]) and (high[n-1] < high[n]) and (high[n-2] < high[n]))
+     or ((high[n+4]  < high[n]) and (high[n+3]  < high[n]) and (high[n+2] == high[n]) and (high[n+1] <= high[n]) and (high[n-1] < high[n]) and (high[n-2] < high[n]))
+     or ((high[n+5] < high[n]) and (high[n+4]  < high[n]) and (high[n+3] == high[n]) and (high[n+2] == high[n]) and (high[n+1] <= high[n]) and (high[n-1] < high[n]) and (high[n-2] < high[n]))
+     or ((high[n+6] < high[n]) and (high[n+5] < high[n]) and (high[n+4] == high[n]) and (high[n+3] <= high[n]) and (high[n+2] == high[n]) and (high[n+1] <= high[n]) and (high[n-1] < high[n]) and (high[n-2] < high[n]))
+	
+dnFractal = ( (low[n+2]  > low[n]) and (low[n+1]  > low[n]) and (low[n-1] > low[n]) and (low[n-2] > low[n]))
+	 or ((low[n+3]  > low[n]) and (low[n+2]  > low[n]) and (low[n+1] == low[n]) and (low[n-1] > low[n]) and (low[n-2] > low[n]))
+	 or ((low[n+4]  > low[n]) and (low[n+3]  > low[n]) and (low[n+2] == low[n]) and (low[n+1] >= low[n]) and (low[n-1] > low[n]) and (low[n-2] > low[n]))
+	 or ((low[n+5] > low[n]) and (low[n+4]  > low[n]) and (low[n+3] == low[n]) and (low[n+2] == low[n]) and (low[n+1] >= low[n]) and (low[n-1] > low[n]) and (low[n-2] > low[n]))
+	 or ((low[n+6] > low[n]) and (low[n+5] > low[n]) and (low[n+4] == low[n]) and (low[n+3] >= low[n]) and (low[n+2] == low[n]) and (low[n+1] >= low[n]) and (low[n-1] > low[n]) and (low[n-2] > low[n]))
+
+// Plot the fractals as shapes on the chart.
+
+plotshape(Show_Upward_Fractals ? dnFractal : na, style=shape.triangledown, location=location.belowbar, offset=-2, color=color.green, transp=70, size = size.small, editable=false)
+plotshape(Show_Downward_Fractals ? upFractal : na, style=shape.triangleup,   location=location.abovebar, offset=-2, color=color.red,  transp=70, size = size.small, editable=false)
+
+// ***********************************************************************************
+//-------------------------------- Stochastic RSI ----------------------------------//
+Show_StochRSI = input(true, title="Show Stochastic RSI")
+
+smoothK = 3		//defval=3, "K", minval=1
+smoothD = 3		//defval=3, "D", minval=1
+lengthRSI = 14		//defval=14, "RSI Length", minval=1
+lengthStoch = 14		//defval=14, "Stochastic Length", minval=1
+src = close		//defval=close, title="RSI Source"
+rsi1 = rsi(src, lengthRSI)
+k = sma(stoch(rsi1, rsi1, rsi1, lengthStoch), smoothK)
+d = sma(k, smoothD)
+
+plotshape(trend_drirection_up and Show_StochRSI and crossover(k, d) ? d : na, style=shape.xcross, location=location.belowbar, text="SRSI-Up", color=color.green, transp=60, size = size.small, editable=false)
+
+plotshape(trend_direction_down and Show_StochRSI and crossover(d, k) ? d : na, style=shape.xcross, location=location.abovebar, text="SRSI-Dn", color=color.red, transp=60, size = size.small, editable=false)
+
+// ***********************************************************************************
+//----------------------------------- Alerts ---------------------------------------//
+alertcondition(crossover(T3, T3[1]), title="T3 BUY", message="T3 BUY!")
+alertcondition(crossunder(T3, T3[1]), title="T3 SELL", message="T3 SELL!")
+alertcondition(cross(T3, T3[1]), title="Color ALARM", message="T3 has changed color!")
