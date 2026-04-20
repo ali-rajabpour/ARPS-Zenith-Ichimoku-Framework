@@ -1,3 +1,10 @@
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/9db5d1e9-8d26-4ba4-ba56-8c65076f0c0b" 
+       alt="ARPS Zenith Ichimoku Framework"
+       width="60%" />
+</p>
+
+
 # ARPS Zenith Ichimoku Framework
 **Originally created: November 11, 2020**
 *(Note: This script was created in 2020 but is being shared on GitHub on 2025-04-25)*
